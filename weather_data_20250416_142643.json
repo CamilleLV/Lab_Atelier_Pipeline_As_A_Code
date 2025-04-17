@@ -1,0 +1,16 @@
+{
+    "Description_Temps": "couvert",
+    "Temperature": 7.75,
+    "Temperature_Ressentie_C": 3.16,
+    "Humidite_WM": 52,
+    "Pression_Atmospherique_hPa": 1006,
+    "Niveau_Mer_hPa": 1006,
+    "Pression_Sol_hPa": 1005,
+    "Vitesse_Vent_m_per_sec": 10.29,
+    "Direction_Vent_DEG": 270,
+    "Rafales_Vent_m_per_sec": 14.92,
+    "Precipitations_1h_mm_per_h)": 0,
+    "Couverture_Nuageuse_perc": 100,
+    "Heure_Lever_Soleil": "10:14:52",
+    "Heure_Coucher_Soleil": "23:35:38"
+}
