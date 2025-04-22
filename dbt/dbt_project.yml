@@ -2,21 +2,18 @@ name: 'dbt_project'
 version: '1.0'
 config-version: 2
 
-profile: dbt_project  # Ce nom doit correspondre à celui du profile dans profiles.yml
+profile: 'dbt_project'
 
-# Définir les dossiers pour les modèles
-model-paths: ["models"]
+# Définition unique des chemins de modèles
+model-paths: ["models"]       
 
-# Définir les dossiers de staging et de marts
-staging-paths: ["models/staging"]
-marts-paths: ["models/marts"]
+# Optionnel : si tu veux séparer staging et marts, ce sont des sous-dossiers de "models"
+# models/
+# ├─ staging/ 
+# └─ marts/
 
-# Définir les sources
-source-paths: ["models/sources"]
-
-# Cibles de nettoyage
+# Répertoires pour les artefacts de compilation
 target-path: "target"
 clean-targets:
   - "target"
   - "dbt_modules"
-

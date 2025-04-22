@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: taxi_trips
+    description: "Source des données des trajets en taxi"
+    database: "NomDeTaBase"  # Remplace par le nom de ta base de données
+    schema: "dbo"            # Remplace par ton schéma, ici 'dbo' par défaut
+    tables:
+      - name: fact_taxi_trips
+        description: "Table des trajets en taxi"
+
+  - name: weather
+    description: "Source des données météorologiques"
+    database: "NomDeTaBase"  # Remplace par le nom de ta base de données
+    schema: "dbo"            # Remplace par ton schéma, ici 'dbo' par défaut
+    tables:
+      - name: dim_weather
+        description: "Table des informations météorologiques"
