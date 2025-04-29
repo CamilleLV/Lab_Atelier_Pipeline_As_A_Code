@@ -1,21 +1,22 @@
 import os
 import json
+import tempfile
 import requests
 import pandas as pd
-from dotenv import load_dotenv
-from google.cloud import storage
+from dotenv import load_dotenv, find_dotenv
 from datetime import datetime, timezone
-import pytz
-import boto3
+from minio import Minio
+from minio.error import S3Error
 
 print("Début du script de récupération des données météo...")
 # Charger les variables d'environnement
-load_dotenv()
+load_dotenv(find_dotenv())
 
 WM_API_KEY = os.getenv("WM_API_KEY")
 
+print("Clé API récupérée :", os.getenv("WM_API_KEY"))  # Vérifie que ce n’est pas None ou vide
 
-# Donnéees NYC
+# Données NYC
 # Latitude et longitude de New York
 NYC_LATITUDE = 40.7128
 NYC_LONGITUDE = -74.0060
@@ -33,7 +34,7 @@ def fetch_weather_map():
         print("Réponse API WeatherMap : ", response.status_code)
         return response.json()
     else:
-        print(f"Erreur API WeatherMap pour : {response.status_code}")
+        print(f"Erreur API WeatherMap : {response.status_code}, {response.text}")
         return None
 
 
@@ -55,8 +56,8 @@ def transform_weather_map(data):
         "temperature_ressentie_c": data["main"]["feels_like"],
         "humidite_wm": data["main"]["humidity"],
         "pression_atmospherique_hpa": data["main"]["pressure"],
-        "niveau_mer_hpa": data["main"]["sea_level"],
-        "pression_sol_hpa": data["main"]["grnd_level"],
+        "niveau_mer_hpa": data.get("main", {}).get("sea_level", None),
+        "pression_sol_hpa": data.get("main", {}).get("grnd_level", None),
         "vitesse_vent_m_per_sec": data["wind"]["speed"],
         "direction_vent_deg": data["wind"]["deg"],
         "rafales_vent_m_per_sec": data["wind"].get("gust", 0),
@@ -68,30 +69,34 @@ def transform_weather_map(data):
     return df
 
 
-def upload_to_minio(bucket_name, file_name, data):
+def upload_to_minio(bucket_name, file_name, json_data):
     print(f"Upload vers MinIO : {file_name} dans le bucket {bucket_name}")
     # Configuration de MinIO
-    minio_client = boto3.client(
-        's3',
-        endpoint_url=os.getenv("MINIO_ENDPOINT"),
-        aws_access_key_id=os.getenv("MINIO_ACCESS_KEY"),
-        aws_secret_access_key=os.getenv("MINIO_SECRET_KEY"),
+    minio_client = Minio(
+        endpoint="localhost:9000",
+        access_key="minioadmin",
+        secret_key="minioadmin",
+        secure=False
     )
 
     try:
         # Vérifier si le bucket existe
-        existing_buckets = minio_client.list_buckets()
-        if not any(bucket['Name'] == bucket_name for bucket in existing_buckets['Buckets']):
+        if not minio_client.bucket_exists(bucket_name):
             print(f"Le bucket {bucket_name} n'existe pas. Création en cours...")
-            minio_client.create_bucket(Bucket=bucket_name)
+            minio_client.make_bucket(bucket_name)
             print(f"Bucket {bucket_name} créé avec succès.")
 
+        # Sauvegarder les données JSON dans un fichier temporaire
+        temp_dir = tempfile.gettempdir()
+        temp_file = os.path.join(temp_dir, file_name)
+        with open(temp_file, "w", encoding="utf-8") as f:
+            f.write(json_data)
+
         # Upload du fichier JSON
-        minio_client.put_object(
-            Bucket=bucket_name,
-            Key=file_name,
-            Body=data,
-            ContentType='application/json'
+        minio_client.fput_object(
+            bucket_name=bucket_name,
+            object_name=file_name,
+            file_path=temp_file,
         )
         print(f"Fichier {file_name} uploadé avec succès dans le bucket {bucket_name}.")
     except Exception as e:
